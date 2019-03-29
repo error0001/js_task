@@ -3,21 +3,23 @@ import json as js
 
 def _read_file(fl_names):
     try:
-        dct_users = {}
         print('start read files.')
-        cmds = []
+        dct_users = {}
         for fl_name in fl_names:
+            cmds = []
+            with open(fl_name, 'r') as data:
+                commands = data.readlines()
+                # we know, than files will auto. closed
+                for line in commands:
+                    cmds.append(line.split())
             # Удаляем лишние буквы для ключей, к-е будут в dict
             # file_userN.txt как userN
-            dct_users.update({fl_name[5:-4]:'None'})
+            # Добавляем ключи в словарь и сразу заполняем список данными
+            tmp_name = fl_name[5:-4]
+            dct_users.update({tmp_name: cmds})
             print(dct_users)
-            with open(fl_name, 'r') as data:
-                cmds = data.readlines()
-                # we know, than files will auto. closed
-                # реализовать сразу запись в json файл
-            for line in cmds:
-                print(line.split())
-                    #cmds.append(line.split)
+            del cmds
+        print(dct_users)
     except IOError as ioerr:
         print('problems with files.', ioerr)
 
