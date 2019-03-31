@@ -2,113 +2,151 @@ from importlib import reload
 import json as js
 import module1
 import module2
+import os
 
 
 def _read_file(fl_names):
+    """
+    :param fl_names: список названий файлов
+    :return: словарь с командами пользователей
+    """
     try:
-        print('Read users files...')
+        print('Читаем пользовательские файлы...')
         dct_users = {}
         for fl_name in fl_names:
             cmds = []
             with open(fl_name, 'r') as data:
                 commands = data.readlines()
-                # we know, than files will auto. closed
                 for line in commands:
                     cmds.append(line.split())
             # Удаляем лишние буквы для ключей, к-е будут в dict
             # file_userN.txt как userN
             # Добавляем ключи в словарь и сразу заполняем список данными
             tmp_name = fl_name[5:-4]
+            # к ключам добавляем значения (а именно команды пользователей)
             dct_users.update({tmp_name: cmds})
-            #print(dct_users)
             del cmds
-        #print(dct_users)
     except IOError as ioerr:
-        print('Problems with files.', ioerr)
+        print('Проблема с пользовательскими файлами.', ioerr)
         del dct_users
         return dct_users
     finally:
         return dct_users
 
 
-def _update_json(cur_dct, tmp_dct, name_wrk):
-    # берем ключи, делаем дикт с ними
-    # сравниваем количество элементах в списках
-    # может быть сравниваем элементы
-    #print('CUR_DCT\n',cur_dct)
-    #print('TMP_DCT\n',tmp_dct)
-    # проверяем сколько значений есть в каждом ключе
-    #print(cur_dct.keys())
-    #print(tmp_dct.keys())
-    # считываем json файл
-    js_data = _read_json(name_wrk)
-    # 'по очереди перебираем ключи'
-    # 'сравниваем количество команд каждого пользователя'
+def _print_mono_str(rng,symb):
+    """
+    напечатает строку с одним символом в N кол-во раз
+    на скорую руку написсал для рамки в консоли.
+    :param rng:
+    :param symb:
+    """
+    smlr = ''
+    for i in range(rng):
+        smlr += symb
+    print(smlr)
+
+
+def _update_json(cur_dct, tmp_dct, json_name):
+    """
+    :param cur_dct: рабочий словарь с данными из пользовательских файлов
+    :param tmp_dct: копия рабочего словаря для поиска разницы
+    :param json_name: имя файла типа json
+    """
+    #js_data = _read_json(json_name)
+    js_data  = _stream_json(name_jsfile=json_name,
+                            mode='r')
+    # в случае если появились изменения в пользователских файлах
+    # tmp_dct обновится в конце, если flag_update будет True
     flag_update = False
+    # перебираем все ключи с пользовательскими командами
     for key in cur_dct.keys():
-        print('************************************')
+        #print('************************************')
+        _print_mono_str(33,'*')
         print('Изменения ',key,':')
         # вытаскиваем порядковый номер пользователя
-
         # чтобы перебирать аргументы команд в json
         key_nmb = int(key[4:]) - 1
 
         if len(cur_dct[key]) != len(tmp_dct[key]):
             if len(cur_dct[key]) > len(tmp_dct[key]):
-                print('появилась новая команда.', cur_dct[key][-1])
+                print('- Появилась новая команда: ', cur_dct[key][-1])
 
-                js_data['commands'][key_nmb]["module"] = cur_dct[key][-1][0]
-                js_data['commands'][key_nmb]["name"] = cur_dct[key][-1][1]
-                js_data['commands'][key_nmb]["function"] = cur_dct[key][-1][2]
-                _write_json(name_wrk, js_data)
+                _refresh_json(nmb_prm=key_nmb,
+                              wrk_dct=cur_dct,
+                              key_dct=key,
+                              js_data=js_data,
+                              js_name=json_name)
 
                 flag_update = True
             else:
-                print('удалена последняя команда.')
-                print('команда:', tmp_dct[key][-1])
-                print('тек. послед. ком', cur_dct[key][-1])
+                print('- Удалена последняя команда: ', tmp_dct[key][-1])
+                print('- Текущая команда: ', cur_dct[key][-1])
 
-                js_data['commands'][key_nmb]["module"] = cur_dct[key][-1][0]
-                js_data['commands'][key_nmb]["name"] = cur_dct[key][-1][1]
-                js_data['commands'][key_nmb]["function"] = cur_dct[key][-1][2]
-                _write_json(name_wrk, js_data)
+                _refresh_json(nmb_prm=key_nmb,
+                              wrk_dct=cur_dct,
+                              key_dct=key,
+                              js_data=js_data,
+                              js_name=json_name)
 
                 flag_update = True
         else:
             try:
                 if cur_dct[key] != tmp_dct[key]:
-                    print('подмена команды.')
-                    print('изначально:',tmp_dct[key][-1])
-                    print('стало:', cur_dct[key][-1])
+                    print('- Изменение послед. команды: ')
+                    print('- Было: ',tmp_dct[key][-1])
+                    print('- Стало: ', cur_dct[key][-1])
 
-                    js_data['commands'][key_nmb]["module"] = cur_dct[key][-1][0]
-                    js_data['commands'][key_nmb]["name"] = cur_dct[key][-1][1]
-                    js_data['commands'][key_nmb]["function"] = cur_dct[key][-1][2]
-                    _write_json(name_wrk, js_data)
+                    _refresh_json(nmb_prm=key_nmb,
+                                  wrk_dct=cur_dct,
+                                  key_dct=key,
+                                  js_data=js_data,
+                                  js_name=json_name)
 
                     flag_update = True
                 else:
                     print('нет.')
             except IndexError as ind_err:
-                print('все команды удалены',ind_err)
+                print('- Ошибка, все команды удалены', ind_err)
     if flag_update is True:
         tmp_dct.clear()
         tmp_dct = cur_dct.copy()
 
     print('json обновлен')
 
-def _read_json(name_jsfile):
-    print('*********************************','\nread json file')
-    # его не обязательно читать
-    with open(name_jsfile, "r") as read_file:
-        return js.load(read_file)
+
+def _refresh_json(nmb_prm,
+                  wrk_dct,
+                  key_dct,
+                  js_data,
+                  js_name):
+    """
+    :param nmb_prm: порядковый номер параметра, который пропорционален
+    номеру пользователя
+    :param wrk_dct: рабочий словарь с командами пользователей
+    :param key_dct: ключ с меткой номера пользователя, тип userN
+    """
+    js_data['commands'][nmb_prm]["module"] = wrk_dct[key_dct][-1][0]
+    js_data['commands'][nmb_prm]["name"] = wrk_dct[key_dct][-1][1]
+    js_data['commands'][nmb_prm]["function"] = wrk_dct[key_dct][-1][2]
+    _stream_json(js_name, 'w', js_data)
 
 
-def _write_json(name_jsfile,
-                wrk_js_data):
-    print('*********************************','\nread json file')
-    with open(name_jsfile, "w") as write_file:
-        js.dump(wrk_js_data, write_file)
+def _stream_json(name_jsfile, mode, js_dct=js):
+    """
+    :param mode: 'w' - записать, 'r' - считать
+    :param js_dct: json ~dict
+    :return: если читаем возвращаем json объект
+    """
+    _print_mono_str(33, '*')
+    if mode == 'r':
+        print('Читаем json файл...')
+        with open(name_jsfile, "r") as read_file:
+            return js.load(read_file)
+    elif mode == 'w':
+        print('Записываем в json файл...')
+        with open(name_jsfile, "w") as write_file:
+            js.dump(js_dct, write_file)
 
 
 def _check_instance(left, right):
@@ -146,8 +184,7 @@ if __name__ == '__main__':
             else:
                 print('Error with users files.')
 
-            #n = input('refresh? y or n: ')
-            print('\n*********************************')
+            _print_mono_str(33,'*')
             n = input('refresh? y or n: ')
             if n == 'y':
                 # Если что-то поменялось то обновляем модули
