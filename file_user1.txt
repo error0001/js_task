@@ -1,2 +1,14 @@
 module1 test1 foo3
 module1 test1 foo2
+module2 test2 foo5
+module2 test2 foo5
+module2 test2 foo5
+module2 test2 foo5
+module2 test2 foo5а
+module2 test2 foo45
+module2 test2 foo45
+module2 test2 foo45
+module2 test2 foo45
+module2 test2 foo45
+module2 test2 foo45
+module2 test2 foo45
