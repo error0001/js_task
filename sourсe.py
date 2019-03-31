@@ -56,11 +56,23 @@ def _update_json(cur_dct, tmp_dct, name_wrk):
         if len(cur_dct[key]) != len(tmp_dct[key]):
             if len(cur_dct[key]) > len(tmp_dct[key]):
                 print('появилась новая команда.', cur_dct[key][-1])
+
+                js_data['commands'][key_nmb]["module"] = cur_dct[key][-1][0]
+                js_data['commands'][key_nmb]["name"] = cur_dct[key][-1][1]
+                js_data['commands'][key_nmb]["function"] = cur_dct[key][-1][2]
+                _write_json(name_wrk, js_data)
+
                 flag_update = True
             else:
                 print('удалена последняя команда.')
                 print('команда:', tmp_dct[key][-1])
                 print('тек. послед. ком', cur_dct[key][-1])
+
+                js_data['commands'][key_nmb]["module"] = cur_dct[key][-1][0]
+                js_data['commands'][key_nmb]["name"] = cur_dct[key][-1][1]
+                js_data['commands'][key_nmb]["function"] = cur_dct[key][-1][2]
+                _write_json(name_wrk, js_data)
+
                 flag_update = True
         else:
             try:
@@ -69,10 +81,10 @@ def _update_json(cur_dct, tmp_dct, name_wrk):
                     print('изначально:',tmp_dct[key][-1])
                     print('стало:', cur_dct[key][-1])
 
-                    _write_json(name_wrk,
-                                js_data,
-                                cur_dct,
-                                'replace')
+                    js_data['commands'][key_nmb]["module"] = cur_dct[key][-1][0]
+                    js_data['commands'][key_nmb]["name"] = cur_dct[key][-1][1]
+                    js_data['commands'][key_nmb]["function"] = cur_dct[key][-1][2]
+                    _write_json(name_wrk, js_data)
 
                     flag_update = True
                 else:
@@ -93,18 +105,10 @@ def _read_json(name_jsfile):
 
 
 def _write_json(name_jsfile,
-                wrk_js_data,
-                wrk_dct,
-                status):
+                wrk_js_data):
     print('*********************************','\nread json file')
-    # replace data
-    if status == 'replace':
-        js_data['commands'][key_nmb]["module"] = wrk_dct[key][-1][0]
-        js_data['commands'][key_nmb]["name"] = wrk_dct[key][-1][1]
-        js_data['commands'][key_nmb]["function"] = wrk_dct[key][-1][2]
-
     with open(name_jsfile, "w") as write_file:
-        json.dump(wrk_js_data, write_file)
+        js.dump(wrk_js_data, write_file)
 
 
 def _check_instance(left, right):
@@ -121,7 +125,7 @@ def _check_instance(left, right):
 
 if __name__ == '__main__':
     try:
-        n = 'None'
+        n = 'q'
         # словарь хранящий копию логов о пользователе
         tmp_dct = {}
         print('Start.')
@@ -142,19 +146,17 @@ if __name__ == '__main__':
             else:
                 print('Error with users files.')
 
-            n = input('refresh? y or n: ')
+            #n = input('refresh? y or n: ')
             print('\n*********************************')
-            # Если что-то поменялось то обновляем модули
+            n = input('refresh? y or n: ')
             if n == 'y':
+                # Если что-то поменялось то обновляем модули
                 module1 = reload(module1)
                 module2 = reload(module2)
-                # очищаем данные с временноо словаря
-                # tmp_dct.clear()
             else:
-                del tmp_dct
                 del dct_wrk
-
     except ValueError as err:
         print('some error', err)
     finally:
+        del tmp_dct
         print('Stop.')
